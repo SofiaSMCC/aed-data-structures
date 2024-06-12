@@ -1,43 +1,35 @@
 #include <iostream>
 #define MAX_SIZE 100
 
-struct Node
-{
+struct Node {
     char key;
     int value;
     Node *next;
 
-    Node()
-    {
+    Node() {
         next = nullptr;
     }
 };
 
-class HashTable
-{
+class HashTable {
 private:
     Node **table;
     int size;
 
-    static int hash(char key)
-    {
+    static int hash(char key) {
         return key - 'a';
     }
 
 public:
-    explicit HashTable(int t) : size(t)
-    {
+    explicit HashTable(int t) : size(t) {
         size = std::max(0, std::min(size, MAX_SIZE));
         table = new Node *[size]();
     }
 
-    ~HashTable()
-    {
-        for (int i = 0; i < size; ++i)
-        {
+    ~HashTable() {
+        for (int i = 0; i < size; ++i) {
             Node *current = table[i];
-            while (current != nullptr)
-            {
+            while (current != nullptr) {
                 Node *temp = current;
                 current = current->next;
                 delete temp;
@@ -46,84 +38,73 @@ public:
         delete[] table;
     }
 
-    void insert(char key, int value)
-    {
+    void insert(char key, int value) {
         int i = hash(key) % size;
         Node *newNode = new Node();
         newNode->key = key;
         newNode->value = value;
 
-        if (table[i] == nullptr)
-        {
+        if (table[i] == nullptr) {
             table[i] = newNode;
-        }
-        else
-        {
+        } else {
             Node *current = table[i];
-            while (current->next != nullptr)
-            {
-                if (current->key == key)
-                {
+            while (current->next != nullptr) {
+                if (current->key == key) {
                     current->value = value;
                     delete newNode;
                     return;
                 }
                 current = current->next;
             }
-            if (current->key == key)
-            {
+            if (current->key == key) {
                 current->value = value;
                 delete newNode;
-            }
-            else
+            } else {
                 current->next = newNode;
+            }
         }
     }
 
-    int get(char key)
-    {
+    int get(char key) {
         int i = hash(key) % size;
         Node *current = table[i];
-        while (current != nullptr)
-        {
-            if (current->key == key)
+        while (current != nullptr) {
+            if (current->key == key) {
                 return current->value;
+            }
             current = current->next;
         }
         return 0;
     }
 
-    void remove(char key)
-    {
+    void remove(char key) {
         int i = hash(key) % size;
         Node *current = table[i];
         Node *prev = nullptr;
 
-        while (current != nullptr && current->key != key)
-        {
+        while (current != nullptr && current->key != key) {
             prev = current;
             current = current->next;
         }
 
-        if (current == nullptr)
+        if (current == nullptr) {
             return;
+        }
 
-        if (prev == nullptr)
+        if (prev == nullptr) {
             table[i] = current->next;
-        else
+        } else {
             prev->next = current->next;
+        }
 
         delete current;
     }
 
-    void update(char key, int value)
-    {
+    void update(char key, int value) {
         int i = hash(key) % size;
         Node *current = table[i];
-        while (current != nullptr)
-        {
-            if (current->key == key)
-            {
+        while (current != nullptr) {
+            if (current->key == key) {
                 current->value = value;
                 return;
             }
@@ -132,13 +113,10 @@ public:
         insert(key, value);
     }
 
-    void clear()
-    {
-        for (int i = 0; i < size; ++i)
-        {
+    void clear() {
+        for (int i = 0; i < size; ++i) {
             Node *current = table[i];
-            while (current != nullptr)
-            {
+            while (current != nullptr) {
                 Node *temp = current;
                 current = current->next;
                 delete temp;
