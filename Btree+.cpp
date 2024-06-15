@@ -31,18 +31,14 @@ public:
     int isFull()
     {
         if (front_index == ((rear_index + 1) % MAX_Q_SIZE))
-        {
             return 1;
-        }
         return 0;
     }
 
     int empty()
     {
         if (front_index == rear_index)
-        {
             return 1;
-        }
         return 0;
     }
 
@@ -85,7 +81,6 @@ node::node()
 class Btree
 {
 public:
-    // Root of tree stored here;
     node *root;
     Btree();
     void deleteNode(int);
@@ -136,53 +131,40 @@ void Btree::insert(int x)
             }
         }
 
-        // now we have reached leaf;
         if (current->size < bucketSize)
-        { // if the node to be inserted is
-          // not filled
+        { 
             int i = 0;
-
-            // Traverse btree
             while (x > current->key[i] && i < current->size)
-                // goto pt where needs to be inserted.
                 i++;
 
             for (int j = current->size; j > i; j--)
-                // adjust and insert element;
                 current->key[j] = current->key[j - 1];
 
             current->key[i] = x;
-
-            // size should be increased by 1
             current->size++;
 
             current->ptr[current->size] = current->ptr[current->size - 1];
             current->ptr[current->size - 1] = NULL;
         }
-
-        // if block does not have enough space;
         else
         {
             node *newLeaf = new node;
             int tempNode[bucketSize + 1];
 
             for (int i = 0; i < bucketSize; i++)
-                // all elements of this block stored
                 tempNode[i] = current->key[i];
             int i = 0, j;
 
-            // find the right posn of num to be inserted
             while (x > tempNode[i] && i < bucketSize)
                 i++;
 
             for (int j = bucketSize + 1; j > i; j--)
                 tempNode[j] = tempNode[j - 1];
             tempNode[i] = x;
-            // inserted element in its rightful position;
 
             newLeaf->isLeaf = true;
             current->size = (bucketSize + 1) / 2;
-            newLeaf->size = (bucketSize + 1) - (bucketSize + 1) / 2; // now rearrangement begins!
+            newLeaf->size = (bucketSize + 1) - (bucketSize + 1) / 2;
 
             current->ptr[current->size] = newLeaf;
             newLeaf->ptr[newLeaf->size] = current->ptr[bucketSize];
@@ -197,8 +179,6 @@ void Btree::insert(int x)
                  i < newLeaf->size; i++, j++)
                 newLeaf->key[i] = tempNode[j];
 
-            // if this is root, then fine,
-            // else we need to increase the height of tree;
             if (current == root)
             {
                 node *newRoot = new node;
@@ -210,17 +190,15 @@ void Btree::insert(int x)
                 root = newRoot;
             }
             else
-                shiftLevel(
-                    newLeaf->key[0], parent,
-                    newLeaf); // parent->original root
+                shiftLevel(newLeaf->key[0], parent, newLeaf);
         }
     }
 }
 
 void Btree::shiftLevel(int x, node *current, node *child)
-{ // insert or create an internal node;
+{ 
     if (current->size < bucketSize)
-    { // if can fit in this level, do that
+    { 
         int i = 0;
         while (x > current->key[i] && i < current->size)
             i++;
@@ -234,8 +212,6 @@ void Btree::shiftLevel(int x, node *current, node *child)
         current->size++;
         current->ptr[i + 1] = child;
     }
-
-    // shift up
     else
     {
         node *newInternal = new node;
@@ -285,9 +261,7 @@ void Btree::shiftLevel(int x, node *current, node *child)
         }
 
         else
-            shiftLevel(current->key[current->size],
-                       findParent(root, current),
-                       newInternal);
+            shiftLevel(current->key[current->size], findParent(root, current), newInternal);
     }
 }
 int Btree::search(int x)
@@ -319,19 +293,13 @@ int Btree::search(int x)
         for (int i = 0; i < current->size; i++)
         {
             if (current->key[i] == x)
-            {
-                // cout<<"Key found "<<endl;
                 return 1;
-                // return;
-            }
         }
 
-        // cout<<"Key not found"<<endl;
         return 0;
     }
 }
 
-// Print the tree
 void Btree::display(node *current)
 {
     if (current == NULL)
