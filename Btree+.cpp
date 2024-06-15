@@ -1,8 +1,5 @@
 #include <iostream>
 using namespace std;
-typedef long long ll;
-typedef unsigned long long ull;
-#define pb push_back
 
 #define MAX_Q_SIZE 100
 
@@ -63,8 +60,8 @@ public:
     }
 };
 
-int bucketSize = 3;
 
+int bucketSize = 3;
 class node
 {
 public:
