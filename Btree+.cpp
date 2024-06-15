@@ -1,156 +1,386 @@
 #include <iostream>
-#include <vector>
-#include <cmath>
-#include <algorithm>
 using namespace std;
+typedef long long ll;
+typedef unsigned long long ull;
+#define pb push_back
 
-class Node
+#define MAX_Q_SIZE 100
+
+template <typename T>
+class queue
+{
+private:
+    T list[MAX_Q_SIZE];
+    int front_index, rear_index;
+
+public:
+    queue()
+    {
+        front_index = 0;
+        rear_index = 0;
+    }
+
+    int size()
+    {
+        if (rear_index >= front_index)
+            return rear_index - front_index;
+        else
+            return MAX_Q_SIZE - (front_index - rear_index);
+    }
+
+    int isFull()
+    {
+        if (front_index == ((rear_index + 1) % MAX_Q_SIZE))
+        {
+            return 1;
+        }
+        return 0;
+    }
+
+    int empty()
+    {
+        if (front_index == rear_index)
+        {
+            return 1;
+        }
+        return 0;
+    }
+
+    T front()
+    {
+        return list[(front_index + 1) % MAX_Q_SIZE];
+    }
+
+    void push(T e)
+    {
+        if (isFull())
+            return;
+        rear_index = (rear_index + 1) % MAX_Q_SIZE;
+        list[rear_index] = e;
+    }
+
+    T pop()
+    {
+        T item = front();
+        front_index = (front_index + 1) % MAX_Q_SIZE;
+        return item;
+    }
+};
+
+int bucketSize = 3;
+
+class node
 {
 public:
-    int t;
-    vector<string> keys;
-    vector<vector<int>> values;
-    vector<Node *> child_ptr;
-    bool leaf; //
-    int n;
-    Node *ptr2next;
+    bool isLeaf;
+    node **ptr;
+    int *key, size;
+    node();
+};
+node::node()
+{
+    key = new int[bucketSize];
+    ptr = new node *[bucketSize + 1]();
+}
+class Btree
+{
+public:
+    // Root of tree stored here;
+    node *root;
+    Btree();
+    void deleteNode(int);
 
-    Node(int _t, Node *_ptr2next = NULL)
+    int search(int);
+    void display(node *);
+    void insert(int);
+    node *findParent(node *, node *);
+    node *getRoot();
+    void shiftLevel(int, node *, node *);
+};
+
+node *Btree::getRoot() { return root; }
+Btree::Btree() { root = NULL; }
+
+void Btree::insert(int x)
+{
+    if (root == NULL)
     {
-        t = _t;
-        ptr2next = _ptr2next;
-        leaf = true;
-        keys.resize(2 * t - 1);
-        values.resize(2 * t - 1);
-        child_ptr.resize(2 * t);
-        n = 0;
+        root = new node;
+        root->key[0] = x;
+        root->isLeaf = true;
+        root->size = 1;
     }
 
-    void insertNonFull(string k, int v)
+    else
     {
-        int i = n - 1;
-        if (leaf)
+        node *current = root;
+        node *parent;
+
+        while (current->isLeaf == false)
         {
-            keys.insert(keys.begin() + n, k);
-            values.insert(values.begin() + n, vector<int>(1, v));
-            n += 1;
-            while (i >= 0 && keys[i] > k)
+            parent = current;
+
+            for (int i = 0; i < current->size; i++)
             {
-                swap(keys[i], keys[i + 1]);
-                swap(values[i], values[i + 1]);
-                i -= 1;
+                if (x < current->key[i])
+                {
+                    current = current->ptr[i];
+                    break;
+                }
+
+                if (i == current->size - 1)
+                {
+                    current = current->ptr[i + 1];
+                    break;
+                }
             }
         }
+
+        // now we have reached leaf;
+        if (current->size < bucketSize)
+        { // if the node to be inserted is
+          // not filled
+            int i = 0;
+
+            // Traverse btree
+            while (x > current->key[i] && i < current->size)
+                // goto pt where needs to be inserted.
+                i++;
+
+            for (int j = current->size; j > i; j--)
+                // adjust and insert element;
+                current->key[j] = current->key[j - 1];
+
+            current->key[i] = x;
+
+            // size should be increased by 1
+            current->size++;
+
+            current->ptr[current->size] = current->ptr[current->size - 1];
+            current->ptr[current->size - 1] = NULL;
+        }
+
+        // if block does not have enough space;
         else
         {
-            while (i >= 0 && keys[i] > k)
-                i -= 1;
-            i += 1;
-            if (child_ptr[i]->n == 2 * t - 1)
+            node *newLeaf = new node;
+            int tempNode[bucketSize + 1];
+
+            for (int i = 0; i < bucketSize; i++)
+                // all elements of this block stored
+                tempNode[i] = current->key[i];
+            int i = 0, j;
+
+            // find the right posn of num to be inserted
+            while (x > tempNode[i] && i < bucketSize)
+                i++;
+
+            for (int j = bucketSize + 1; j > i; j--)
+                tempNode[j] = tempNode[j - 1];
+            tempNode[i] = x;
+            // inserted element in its rightful position;
+
+            newLeaf->isLeaf = true;
+            current->size = (bucketSize + 1) / 2;
+            newLeaf->size = (bucketSize + 1) - (bucketSize + 1) / 2; // now rearrangement begins!
+
+            current->ptr[current->size] = newLeaf;
+            newLeaf->ptr[newLeaf->size] = current->ptr[bucketSize];
+
+            current->ptr[newLeaf->size] = current->ptr[bucketSize];
+            current->ptr[bucketSize] = NULL;
+
+            for (int i = 0; i < current->size; i++)
+                current->key[i] = tempNode[i];
+
+            for (int i = 0, j = current->size;
+                 i < newLeaf->size; i++, j++)
+                newLeaf->key[i] = tempNode[j];
+
+            // if this is root, then fine,
+            // else we need to increase the height of tree;
+            if (current == root)
             {
-                splitChild(i);
-                if (keys[i] < k)
-                    i += 1;
+                node *newRoot = new node;
+                newRoot->key[0] = newLeaf->key[0];
+                newRoot->ptr[0] = current;
+                newRoot->ptr[1] = newLeaf;
+                newRoot->isLeaf = false;
+                newRoot->size = 1;
+                root = newRoot;
             }
-            child_ptr[i]->insertNonFull(k, v);
+            else
+                shiftLevel(
+                    newLeaf->key[0], parent,
+                    newLeaf); // parent->original root
         }
     }
+}
 
-    void splitChild(int i)
-    {
-        Node *y = child_ptr[i];
-        Node *z = new Node(y->t, y->ptr2next);
-        child_ptr.insert(child_ptr.begin() + i + 1, z);
-        keys.insert(keys.begin() + i, y->keys[t - 1]);
-        values.insert(values.begin() + i, y->values[t - 1]);
-        y->ptr2next = z;
-        z->leaf = y->leaf;
-        z->n = t - 1;
-        y->n = t - 1;
-        for (int j = 0; j < t - 1; j++)
-        {
-            z->keys[j] = y->keys[j + t];
-            z->values[j] = y->values[j + t];
-        }
-        if (!y->leaf)
-        {
-            for (int j = 0; j < t; j++)
-                z->child_ptr[j] = y->child_ptr[j + t];
-        }
-        n += 1;
-    }
-
-    void print()
-    {
-        for (int i = 0; i < n; i++)
-        {
-            if (!leaf)
-                child_ptr[i]->print();
-            cout << "['" << keys[i] << "']" << endl;
-        }
-        if (!leaf)
-            child_ptr[n]->print();
-    }
-
-    Node *search(string k, int v)
-    {
+void Btree::shiftLevel(int x, node *current, node *child)
+{ // insert or create an internal node;
+    if (current->size < bucketSize)
+    { // if can fit in this level, do that
         int i = 0;
-        while (i < n && k > keys[i])
-            i += 1;
-        if (keys[i] == k)
+        while (x > current->key[i] && i < current->size)
+            i++;
+        for (int j = current->size; j > i; j--)
+            current->key[j] = current->key[j - 1];
+
+        for (int j = current->size + 1; j > i + 1; j--)
+            current->ptr[j] = current->ptr[j - 1];
+
+        current->key[i] = x;
+        current->size++;
+        current->ptr[i + 1] = child;
+    }
+
+    // shift up
+    else
+    {
+        node *newInternal = new node;
+        int tempKey[bucketSize + 1];
+        node *tempPtr[bucketSize + 2];
+
+        for (int i = 0; i < bucketSize; i++)
+            tempKey[i] = current->key[i];
+
+        for (int i = 0; i < bucketSize + 1; i++)
+            tempPtr[i] = current->ptr[i];
+
+        int i = 0, j;
+        while (x > tempKey[i] && i < bucketSize)
+            i++;
+
+        for (int j = bucketSize + 1; j > i; j--)
+            tempKey[j] = tempKey[j - 1];
+
+        tempKey[i] = x;
+        for (int j = bucketSize + 2; j > i + 1; j--)
+            tempPtr[j] = tempPtr[j - 1];
+
+        tempPtr[i + 1] = child;
+        newInternal->isLeaf = false;
+        current->size = (bucketSize + 1) / 2;
+
+        newInternal->size = bucketSize - (bucketSize + 1) / 2;
+
+        for (int i = 0, j = current->size + 1;
+             i < newInternal->size; i++, j++)
+            newInternal->key[i] = tempKey[j];
+
+        for (int i = 0, j = current->size + 1;
+             i < newInternal->size + 1; i++, j++)
+            newInternal->ptr[i] = tempPtr[j];
+
+        if (current == root)
         {
-            for (int j = 0; j < values[i].size(); j++)
+            node *newRoot = new node;
+            newRoot->key[0] = current->key[current->size];
+            newRoot->ptr[0] = current;
+            newRoot->ptr[1] = newInternal;
+            newRoot->isLeaf = false;
+            newRoot->size = 1;
+            root = newRoot;
+        }
+
+        else
+            shiftLevel(current->key[current->size],
+                       findParent(root, current),
+                       newInternal);
+    }
+}
+int Btree::search(int x)
+{
+    if (root == NULL)
+        return -1;
+
+    else
+    {
+        node *current = root;
+        while (current->isLeaf == false)
+        {
+            for (int i = 0; i < current->size; i++)
             {
-                if (values[i][j] == v)
-                    return this;
+                if (x < current->key[i])
+                {
+                    current = current->ptr[i];
+                    break;
+                }
+
+                if (i == current->size - 1)
+                {
+                    current = current->ptr[i + 1];
+                    break;
+                }
             }
         }
-        if (leaf)
-            return NULL;
-        else
-            return child_ptr[i]->search(k, v);
-    }
-};
 
-class BTree
-{
-public:
-    Node *root;
-    int t;
-
-    BTree(int _t)
-    {
-        root = new Node(_t);
-        root->leaf = true;
-    }
-
-    void insert(string k, int v)
-    {
-        Node *r = root;
-        if (r->n == 2 * t - 1)
+        for (int i = 0; i < current->size; i++)
         {
-            Node *s = new Node(t);
-            root = s;
-            s->child_ptr[0] = r;
-            s->splitChild(0);
-            s->insertNonFull(k, v);
+            if (current->key[i] == x)
+            {
+                // cout<<"Key found "<<endl;
+                return 1;
+                // return;
+            }
+        }
+
+        // cout<<"Key not found"<<endl;
+        return 0;
+    }
+}
+
+// Print the tree
+void Btree::display(node *current)
+{
+    if (current == NULL)
+        return;
+    queue<node *> q;
+    q.push(current);
+    while (!q.empty())
+    {
+        int l;
+        l = q.size();
+
+        for (int i = 0; i < l; i++)
+        {
+            node *tNode = q.front();
+            q.pop();
+
+            for (int j = 0; j < tNode->size; j++)
+                if (tNode != NULL)
+                    cout << tNode->key[j] << " ";
+
+            for (int j = 0; j < tNode->size + 1; j++)
+                if (tNode->ptr[j] != NULL)
+                    q.push(tNode->ptr[j]);
+
+            cout << "\t";
+        }
+        cout << endl;
+    }
+}
+
+node *Btree::findParent(node *current, node *child)
+{
+    node *parent;
+    if (current->isLeaf || (current->ptr[0])->isLeaf)
+        return NULL;
+
+    for (int i = 0; i < current->size + 1; i++)
+    {
+        if (current->ptr[i] == child)
+        {
+            parent = current;
+            return parent;
         }
         else
         {
-            r->insertNonFull(k, v);
+            parent = findParent(current->ptr[i], child);
+            if (parent != NULL)
+                return parent;
         }
     }
-    void print()
-    {
-        root->print();
-    }
-    Node *search(string k, int v)
-    {
-        return (root == NULL) ? NULL : root->search(k, v);
-    }
-};
-
-void printTree(BTree *tree)
-{
-    tree->print();
+    return parent;
 }
